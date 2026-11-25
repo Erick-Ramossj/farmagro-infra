@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-exporter
+  namespace: farmagro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-exporter
+  template:
+    metadata:
+      labels:
+        app: kafka-exporter
+    spec:
+      nodeSelector:
+        role: monitoring
+      tolerations:
+        - key: role
+          operator: Equal
+          value: monitoring
+          effect: NoSchedule
+      containers:
+        - name: kafka-exporter
+          image: danielqsj/kafka-exporter:v1.8.0@sha256:9b67b273d1e54052e7ce77c46ecd1c6619fdee7e2ed26717e6272806fbc94150
+          args:
+            - --kafka.server=kafka-0.kafka.farmagro.svc.cluster.local:9092
+            - --topic.filter=eventos-negocio
+            - --group.filter=farmagro-consumers
+            - --log.level=warn
+          ports:
+            - name: metrics
+              containerPort: 9308
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-exporter
+  namespace: farmagro
+spec:
+  type: NodePort
+  ports:
+    - name: metrics
+      port: 9308
+      targetPort: 9308
+      nodePort: 30093
+  selector:
+    app: kafka-exporter

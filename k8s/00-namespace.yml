@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: farmagro
+  labels:
+    app.kubernetes.io/name: farmagro
+    app.kubernetes.io/part-of: farmagro-abp

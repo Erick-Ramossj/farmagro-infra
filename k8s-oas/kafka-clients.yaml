@@ -1,0 +1,43 @@
+# Reads the business events that the backend publishes. Live view: kubectl -n farmagro logs -f deploy/kafka-consumer
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-consumer
+  namespace: farmagro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-consumer
+  template:
+    metadata:
+      labels:
+        app: kafka-consumer
+    spec:
+      nodeSelector:
+        role: monitoring
+      tolerations:
+        - key: role
+          operator: Equal
+          value: monitoring
+          effect: NoSchedule
+      containers:
+        - name: kafka-consumer
+          image: bitnamilegacy/kafka:3.7.1@sha256:c274f870840a5d854fb601408c398e596c795582d869b5d85c7f7d882e5c478d
+          command:
+            - /bin/bash
+            - -c
+          args:
+            - |
+              exec /opt/bitnami/kafka/bin/kafka-console-consumer.sh \
+                --bootstrap-server kafka-0.kafka.farmagro.svc.cluster.local:9092 \
+                --topic eventos-negocio \
+                --group farmagro-consumers \
+                --from-beginning
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 200m
+              memory: 192Mi

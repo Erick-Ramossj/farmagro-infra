@@ -1,0 +1,13 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Database seeds and backups
+*.sql
+*.archive.gz
+*.tar.gz
+
+*.log

@@ -1,0 +1,104 @@
+# Backend 1 — Spring Boot (functional API). Runs on the node labelled role=backend.
+# The Secret farmagro-backend-secret is created by deploy.sh from .env (never stored in git).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: farmagro-backend-config
+  namespace: farmagro
+data:
+  SERVER_PORT: "8080"
+  SPRING_DATA_MONGODB_DATABASE: "farmagro_s4"
+  # Business events. Kafka is deployed after the backend, which publishes as soon as the broker answers.
+  KAFKA_BOOTSTRAP_SERVERS: "kafka.farmagro.svc.cluster.local:9092"
+  KAFKA_EVENTS_TOPIC: "eventos-negocio"
+  SPRINGDOC_API_DOCS_PATH: "/api-docs"
+  SPRINGDOC_SWAGGER_UI_PATH: "/swagger-ui.html"
+  SPRINGDOC_SWAGGER_UI_ENABLED: "true"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend1
+  namespace: farmagro
+  labels:
+    app: backend1
+    app.kubernetes.io/part-of: farmagro-abp
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: backend1
+  template:
+    metadata:
+      labels:
+        app: backend1
+    spec:
+      nodeSelector:
+        role: backend
+      tolerations:
+        - key: role
+          operator: Equal
+          value: backend
+          effect: NoSchedule
+      containers:
+        - name: backend1
+          image: erickramoss/farmagro-be:eva-final-v2@sha256:49ca4ecba07785d04c8844b58577dda69356fbfd14bd1e3ac47253ae38cf78f5
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: farmagro-backend-secret
+            - configMapRef:
+                name: farmagro-backend-config
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          # The startup probe gives the JVM up to 200 s to boot, so a slow start is never mistaken
+          # for a crash (the restarts shown in scenario 1 must come only from the OOMKilled).
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 40
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: farmagro-backend
+  namespace: farmagro
+  labels:
+    app: backend1
+spec:
+  type: NodePort
+  selector:
+    app: backend1
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      nodePort: 30081
