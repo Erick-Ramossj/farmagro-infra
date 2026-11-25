@@ -1,6 +1,6 @@
 # farmagro-infra
 
-Manifests y scripts para desplegar FARMAGRO en un clúster k3s de 4 nodos, con Kafka, Prometheus y Grafana en pods. Las imágenes ya están publicadas y fijadas por digest: no se compila nada.
+Manifests y scripts para desplegar FARMAGRO en un clúster k3s de 4 nodos, con Kafka, Prometheus y Grafana en pods. Las imágenes ya están publicadas y fijadas por digest: no se compila nada. La de Kafka (`erickramoss/farmagro-kafka`) es una copia sin cambios de `bitnamilegacy/kafka:3.7.1`, con el mismo digest.
 
 | Nodo | Rol (`role=`) | Qué corre |
 |---|---|---|
@@ -16,7 +16,7 @@ MongoDB (27017) y SQL Server (1433) son externos al clúster y deben tener sus d
 1. Control: instala k3s e imprime la IP privada y el token.
 
    ```bash
-   git clone --depth 1 -b eva-final-v2 https://github.com/Erick-Ramossj/farmagro-infra.git ~/farmagro-infra
+   git clone --depth 1 -b eva-final-v3 https://github.com/Erick-Ramossj/farmagro-infra.git ~/farmagro-infra
    cd ~/farmagro-infra && sudo env INSTALL_K3S_VERSION=v1.37.2+k3s1 bash k3s/install-server.sh
    ```
 
